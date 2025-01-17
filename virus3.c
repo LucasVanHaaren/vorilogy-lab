@@ -123,6 +123,7 @@ void execute_stage_1(char *master_ip) {
     system(cmd_buffer);
 }
 
+// self destroy
 void self_delete(char *program_name) {
     remove(program_name);
     exit(EXIT_SUCCESS);
@@ -194,7 +195,7 @@ int main(int argc, char **argv) {
         }
     }
 
-    // wait all childs
+    // wait all childs processus
     for (int i = first_host; i <= last_host; i++) {
         wait(NULL);
     }
